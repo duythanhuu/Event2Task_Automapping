@@ -76,24 +76,24 @@ if data_redundant_events == []:
 # 5_FC_REPLACE
 XMLexample_stored_in_a_string ='''                            <ECUC-CONTAINER-VALUE>
                               <SHORT-NAME>1_EV_REPLACE</SHORT-NAME>
-                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/AUTOSAR/EcucDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping</DEFINITION-REF>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/AUTOSAR_Rte/EcucModuleDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping</DEFINITION-REF>
                               <PARAMETER-VALUES>
                                 <ECUC-NUMERICAL-PARAM-VALUE>
-                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/AUTOSAR/EcucDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RtePositionInTask</DEFINITION-REF>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/AUTOSAR_Rte/EcucModuleDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RtePositionInTask</DEFINITION-REF>
                                   <VALUE>2_POS_REPLACE</VALUE>
                                 </ECUC-NUMERICAL-PARAM-VALUE>
                                 <ECUC-NUMERICAL-PARAM-VALUE>
-                                  <DEFINITION-REF DEST="ECUC-FLOAT-PARAM-DEF">/AUTOSAR/EcucDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteActivationOffset</DEFINITION-REF>
+                                  <DEFINITION-REF DEST="ECUC-FLOAT-PARAM-DEF">/AUTOSAR_Rte/EcucModuleDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteActivationOffset</DEFINITION-REF>
                                   <VALUE>0.0</VALUE>
                                 </ECUC-NUMERICAL-PARAM-VALUE>
                               </PARAMETER-VALUES>
                               <REFERENCE-VALUES>
                                 <ECUC-REFERENCE-VALUE>
-                                  <DEFINITION-REF DEST="ECUC-REFERENCE-DEF">/AUTOSAR/EcucDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteMappedToTaskRef</DEFINITION-REF>
+                                  <DEFINITION-REF DEST="ECUC-REFERENCE-DEF">/AUTOSAR_Rte/EcucModuleDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteMappedToTaskRef</DEFINITION-REF>
                                   <VALUE-REF DEST="ECUC-CONTAINER-VALUE">/RB/PT/PCFG_ECU/RB/RTAOS/3_OS_REPLACE</VALUE-REF>
                                 </ECUC-REFERENCE-VALUE>
                                 <ECUC-REFERENCE-VALUE>
-                                  <DEFINITION-REF DEST="ECUC-FOREIGN-REFERENCE-DEF">/AUTOSAR/EcucDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteEventRef</DEFINITION-REF>
+                                  <DEFINITION-REF DEST="ECUC-FOREIGN-REFERENCE-DEF">/AUTOSAR_Rte/EcucModuleDefs/Rte/RteSwComponentInstance/RteEventToTaskMapping/RteEventRef</DEFINITION-REF>
                                   <VALUE-REF DEST="4_Ti_MoW_REPLACE">/5_FC_REPLACE_Package/5_FC_REPLACE/IB_5_FC_REPLACE/1_EV_REPLACE</VALUE-REF>
                                 </ECUC-REFERENCE-VALUE>
                               </REFERENCE-VALUES>
@@ -102,24 +102,33 @@ XMLexample_stored_in_a_string ='''                            <ECUC-CONTAINER-VA
 
 with open("conf_ecu_rte_ecucvalues.arxml", "r") as f:
     contents = f.readlines()
+for line in contents:
+    if ((re.findall("[a-zA-Z]", line)) == []):
+        contents.remove(line)
+
 count = 2000
+CPT_section = ''
+line_CPT_section = 0
+data_new_events.reverse()
 for event in data_new_events:
     FC_name = ''
     for FC_new in FCs_new:
         FC_new = FC_new.replace("\n","")
         if FC_new in event:
             FC_name = FC_new
-    line_CPT_section = 0
-    CPT_section = '<SHORT-NAME>CPT_' + FC_name + '</SHORT-NAME>'
-    #print (CPT_section)
-    for line in contents:
-        if CPT_section in line:
-            line_CPT_section = contents.index(line)
-            print('\nNew event added:')
-            print (event)
-            #print(line_CPT_section+9)
-            #print(line)
 
+    CPT_section_slave = '<SHORT-NAME>EV_' + FC_name + '_Proc_'
+    if (CPT_section_slave != CPT_section):
+        CPT_section = CPT_section_slave
+        print(CPT_section)
+        for line in contents:
+            if CPT_section in line:
+                line_CPT_section = contents.index(line)
+
+    print('\nNew event added:')
+    print(line_CPT_section)
+    print (event)
+    
     EV_add = ''
     if '_Init' in event:
         EV_add = XMLexample_stored_in_a_string.replace('1_EV_REPLACE', event)
@@ -146,7 +155,7 @@ for event in data_new_events:
                 #print(count)
                 break
         #print(EV_add)
-    contents.insert(line_CPT_section+9, EV_add)
+    contents.insert(line_CPT_section+23, EV_add)
 
 ###############################################################################################################
 ##Remove redundant EV_ to conf_ecu_rte_ecucvalues.arxml
@@ -179,31 +188,32 @@ with open("conf_ecu_rte_ecucvalues.arxml", "w") as f:
 ##Read fast_init.txt
 with open("fast_init.txt", "r") as f_fast_init:
     fast_init = f_fast_init.readlines()
-
+data_new_events.reverse()
 for event in data_new_events:
-    FC_name = ''
-    line_add = 0
-    for FC_new in FCs_new:
-        if FC_new.replace('\n', '') in event:
-            FC_name = FC_new.replace('\n', '')
-    #print (FC_name)
-    # -fi=/VehC_SwSPSA_Package/VehC_SwSPSA/IB_VehC_SwSPSA/EV_VehC_SwSPSA_Proc_031_Init
-    fast_init_add = '-fi=/FC_REPLACE_Package/FC_REPLACE/IB_FC_REPLACE/EV_REPLACE\n'
-    fast_init_add = fast_init_add.replace('FC_REPLACE', FC_name)
-    fast_init_add = fast_init_add.replace('EV_REPLACE', event)
-    #print(fast_init_add)
-    for line in fast_init:
-        if event in line:
-            print('Event is existing in fast_init.txt')
+    if '_Init' in event:
+        FC_name = ''
+        line_add = 0
+        for FC_new in FCs_new:
+            if FC_new.replace('\n', '') in event:
+                FC_name = FC_new.replace('\n', '')
+        #print (FC_name)
+        # -fi=/VehC_SwSPSA_Package/VehC_SwSPSA/IB_VehC_SwSPSA/EV_VehC_SwSPSA_Proc_031_Init
+        fast_init_add = '-fi=/FC_REPLACE_Package/FC_REPLACE/IB_FC_REPLACE/EV_REPLACE\n'
+        fast_init_add = fast_init_add.replace('FC_REPLACE', FC_name)
+        fast_init_add = fast_init_add.replace('EV_REPLACE', event)
+        #print(fast_init_add)
+        for line in fast_init:
+            if event in line:
+                print('Event is existing in fast_init.txt')
+                print(fast_init_add)
+                line_add = 0
+                break
+            elif FC_name in line:
+                line_add = fast_init.index(line)
+        if (line_add != 0):
+            fast_init.insert(line_add+1, fast_init_add)
+            print('Event added: ')
             print(fast_init_add)
-            line_add = 0
-            break
-        elif FC_name in line:
-            line_add = fast_init.index(line)
-    if (line_add != 0):
-        fast_init.insert(line_add+1, fast_init_add)
-        print('Event added: ')
-        print(fast_init_add)
         
 with open("fast_init.txt", "w") as f_fast_init:
     contents_fast_init = "".join(fast_init)
