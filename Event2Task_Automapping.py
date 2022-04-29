@@ -7,8 +7,8 @@ import re
 import shutil
 
 
-shutil.copyfile(r'Conf\__Conf\conf_ecu_rte_ecucvalues.arxml', r'Conf\__Conf\conf_ecu_rte_ecucvalues_OLD.arxml')
-shutil.copyfile(r'Conf\__Conf\fast_init.txt', r'Conf\__Conf\fast_init_OLD.txt')
+##shutil.copyfile(r'Conf\__Conf\conf_ecu_rte_ecucvalues.arxml', r'Conf\__Conf\conf_ecu_rte_ecucvalues_OLD.arxml')
+##shutil.copyfile(r'Conf\__Conf\fast_init.txt', r'Conf\__Conf\fast_init_OLD.txt')
 
 ###############################################################################################################
 ## Read conf_ecu_rte_ecucvalues.arxml to find all events
@@ -124,37 +124,37 @@ else:
                 if CPT_section in line:
                     line_CPT_section = contents.index(line)
 
+        while count <= maxPos:
+            count += 1
+            if count not in dataPosition:
+                break
+        
         print('New event added:')
         print (event)
+        print('Position: ', count)
         print('')
         
         EV_add = ''
-        if "_Init" or "_SyncIni" or "_SyncAngular" in event:
+        if ("_Init" or "_SyncIni" or "_SyncAngular") in event:
             EV_add = XMLexample_stored_in_a_string.replace('1_EV_REPLACE', event)
             EV_add = EV_add.replace('3_OS_REPLACE', 'OS_Ini_Task')
             EV_add = EV_add.replace('4_Ti_MoW_REPLACE', 'SWC-MODE-SWITCH-EVENT')
             EV_add = EV_add.replace('5_FC_REPLACE', FC_name)
             EV_add = EV_add.replace('2_POS_REPLACE', str(count))
-            while count <= maxPos:
-                count += 1
-                if count not in dataPosition:
-                    break
             
-        if "_Run" or "_SyncS0" or "_SyncS1" or "_Sync" in event:
+            
+        if ("_Run" or "_SyncS0" or "_SyncS1" or "_Sync") in event:
             EV_add = XMLexample_stored_in_a_string.replace('1_EV_REPLACE', event)
             EV_add = EV_add.replace('3_OS_REPLACE', 'OS_10ms_Task')
             EV_add = EV_add.replace('4_Ti_MoW_REPLACE', 'TIMING-EVENT')
             EV_add = EV_add.replace('5_FC_REPLACE', FC_name)
             EV_add = EV_add.replace('2_POS_REPLACE', str(count))
-            while count <= maxPos:
-                count += 1
-                if count not in dataPosition:
-                    break
+            
         contents.insert(line_CPT_section+23, EV_add)
 
 ###############################################################################################################
 ## Remove redundant EV_ in conf_ecu_rte_ecucvalues.arxml
-##############################################################################################################
+###############################################################################################################
 print('')
 print('*********************************************************************')
 print('** Remove redundant EV_ to conf_ecu_rte_ecucvalues.arxml') 
@@ -191,8 +191,10 @@ print('*********************************************************************')
 with open(r"Conf\__Conf\fast_init.txt", "r") as f_fast_init:
     fast_init = f_fast_init.readlines()
 data_new_events.reverse()
+
 for event in data_new_events:
-    if "_Init" or "_SyncIni" or "_SyncAngular" in event:
+    if ("_Init" or "_SyncIni" or "_SyncAngular") in event:
+        #print(event)
         FC_name = ''
         line_add = 0
         for FC_new in FCs_new:
@@ -216,7 +218,38 @@ for event in data_new_events:
             fast_init.insert(line_add+1, fast_init_add)
             print('Event added: ')
             print(fast_init_add)
-        
+
+###############################################################################################################
+## Remove redundant Init event in fast_init.txt
+###############################################################################################################
+            
+print('')
+print('*********************************************************************')
+print('** Remove redundant Init event in fast_init.txt') 
+print('*********************************************************************')
+
+if data_redundant_events == []:
+    print('No event removed')
+else:
+    for event in data_redundant_events:
+        if ("_Init" or "_SyncIni" or "_SyncAngular") in event:
+            #print(event)
+            FC_name = ''
+            line_add = 0
+            for FC_new in FCs_new:
+                if FC_new.replace('\n', '') in event:
+                    FC_name = FC_new.replace('\n', '')
+            #print (FC_name)
+            # -fi=/VehC_SwSPSA_Package/VehC_SwSPSA/IB_VehC_SwSPSA/EV_VehC_SwSPSA_Proc_031_Init
+            fast_init_add = '-fi=/FC_REPLACE_Package/FC_REPLACE/IB_FC_REPLACE/EV_REPLACE\n'
+            fast_init_add = fast_init_add.replace('FC_REPLACE', FC_name)
+            fast_init_add = fast_init_add.replace('EV_REPLACE', event)
+            
+            for line in fast_init:
+                if event in line:
+                    fast_init.pop(fast_init.index(line))
+                    print('Event removed:')
+                    print(fast_init_add)
 with open(r"Conf\__Conf\fast_init.txt", "w") as f_fast_init:
     contents_fast_init = "".join(fast_init)
     f_fast_init.write(contents_fast_init)
